@@ -1,242 +1,325 @@
 #include <iostream>
 #include <fstream>
-#include <ctime>
-#include <string>
+#include <sstream>
 #include <vector>
+#include <ctime>
+#include <algorithm>
 
-//void UI::showPanel() {
-//    std::cout << "1. Search for password." << std::endl;
-//    std::cout << "2. Sort password." << std::endl;
-//    std::cout << "3. Add password." << std::endl;
-//    std::cout << "4. Edit password." << std::endl;
-//    std::cout << "5. Delete password." << std::endl;
-//    std::cout << "6. Add category." << std::endl;
-//    std::cout << "7. Delete category." << std::endl;
-//    std::cout << "8. Show files in folder." << std::endl;
-//    std::cout << "9. Choose your path." << std::endl;
-//}
+using namespace std;
 
 struct Password {
-    std::string name;
-    std::string password;
-    std::string category;
-    std::string website;
-    std::string login;
+    string name;
+    string password;
+    string category;
+    string website;
+    string login;
+    time_t timestamp;
 };
 
-void logOperation(std::string operation) {
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-    std::string timestamp = std::to_string(ltm->tm_year + 1900) + "-" + std::to_string(ltm->tm_mon + 1) + "-" + std::to_string(ltm->tm_mday) + " " + std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
+class PasswordManager {
+private:
+    string filename;
+    vector<Password> passwords;
 
-    std::ofstream logFile("log.txt", std::ios::app);
-    if (!logFile) {
-        std::cerr << "Could not open log file" << std::endl;
-        return;
-    }
-
-    logFile << timestamp << " - " << operation << std::endl;
-}
-
-void savePassword(const Password& password) {
-    std::ofstream passwordsFile("passwords.txt", std::ios::app);
-    if (!passwordsFile) {
-        std::cerr << "Could not open passwords file" << std::endl;
-        return;
-    }
-
-    passwordsFile << password.name << std::endl;
-    passwordsFile << password.password << std::endl;
-    passwordsFile << password.category << std::endl;
-    passwordsFile << password.website << std::endl;
-    passwordsFile << password.login << std::endl;
-
-    passwordsFile.close();
-
-    std::string operation = "Saved password: " + password.name + " (" + password.category + ")";
-    logOperation(operation);
-
-    std::cout << "Password saved" << std::endl;
-}
-
-void encryptFile(std::string filePath) {
-    std::ifstream inFile(filePath, std::ios::binary);
-    if (!inFile) {
-        std::cerr << "Could not open file: " << filePath << std::endl;
-        return;
-    }
-
-    std::string encryptedFilePath = filePath + ".enc";
-    std::ofstream outFile(encryptedFilePath, std::ios::binary);
-    if (!outFile) {
-        std::cerr << "Could not create encrypted file: " << encryptedFilePath << std::endl;
-        return;
-    }
-
-    char key = 'K';
-    char c;
-    while (inFile.get(c)) {
-        c = c ^ key;
-        outFile.put(c);
-    }
-
-    std::cout << "File encrypted and saved as: " << encryptedFilePath << std::endl;
-}
-
-void readPasswords() {
-    std::ifstream passwordsFile("passwords.txt");
-    if (!passwordsFile) {
-        std::cerr << "Could not open passwords file" << std::endl;
-        return;
-    }
-
-    std::vector<Password> passwords;
-
-    while (!passwordsFile.eof()) {
-        Password password;
-
-        getline(passwordsFile, password.name);
-        getline(passwordsFile, password.password);
-        getline(passwordsFile, password.category);
-        getline(passwordsFile, password.website);
-        getline(passwordsFile, password.login);
-
-        if (!password.name.empty()) {
-            passwords.push_back(password);
+    void encryptFile() {
+        ofstream file(filename, ios::binary);
+        if (file.is_open()) {
+            for (const auto& password : passwords) {
+                file.write(reinterpret_cast<const char*>(&password), sizeof(password));
+            }
+            file.close();
+        } else {
+            cout << "Błąd podczas zapisu pliku." << endl;
         }
     }
 
-    passwordsFile.close();
+    void decryptFile() {
+        passwords.clear();
 
-    if (passwords.empty()) {
-        std::cout << "No passwords saved yet" << std::endl;
-    } else {
-        std::cout << "Saved passwords:" << std::endl;
+        ifstream file(filename, ios::binary);
+        if (file.is_open()) {
+            while (!file.eof()) {
+                Password password;
+                file.read(reinterpret_cast<char*>(&password), sizeof(password));
+                if (!file.eof()) {
+                    passwords.push_back(password);
+                }
+            }
+            file.close();
+        } else {
+            cout << "Błąd podczas odczytu pliku." << endl;
+        }
+    }
+
+    bool isPasswordUsed(const string& password) {
+        for (const auto& entry : passwords) {
+            if (entry.password == password) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isPasswordSecure(const string& password) {
+        // Sprawdź tutaj złożoność hasła, np. długość, obecność wielkich liter, małych liter, znaków specjalnych itp.
+        // Zwróć true, jeśli hasło jest wystarczająco bezpieczne, w przeciwnym razie false.
+        return true;
+    }
+
+public:
+    PasswordManager(const string& file) : filename(file) {
+        decryptFile();
+    }
+
+    void searchPasswords(const string& query) {
+        cout << "Wyszukane hasła:" << endl;
 
         for (const auto& password : passwords) {
-            std::cout << "Name: " << password.name << std::endl;
-            std::cout << "Category: " << password.category << std::endl;
-            std::cout << "Password: " << password.password << std::endl;
-            if (!password.website.empty()) {
-                std::cout << "Website: " << password.website << std::endl;
+            if (password.name.find(query) != string::npos ||
+                password.password.find(query) != string::npos ||
+                password.category.find(query) != string::npos ||
+                password.website.find(query) != string::npos ||
+                password.login.find(query) != string::npos) {
+                cout << "Nazwa: " << password.name << endl;
+                cout << "Hasło: " << password.password << endl;
+                cout << "Kategoria: " << password.category << endl;
+                cout << "Strona WWW: " << password.website << endl;
+                cout << "Login: " << password.login << endl;
+                cout << "Timestamp: " << asctime(localtime(&password.timestamp)) << endl;
+                cout << endl;
             }
-            if (!password.login.empty()) {
-                std::cout << "Login: " << password.login << std::endl;
-            }
-            std::cout << std::endl;
         }
     }
-}
 
+    void sortPasswords(const vector<string>& fields) {
+        vector<Password> sortedPasswords = passwords;
 
+        sort(sortedPasswords.begin(), sortedPasswords.end(), [&fields](const Password& a, const Password& b) {
+            for (const auto& field : fields) {
+                if (field == "name") {
+                    if (a.name != b.name) {
+                        return a.name < b.name;
+                    }
+                } else if (field == "password") {
+                    if (a.password != b.password) {
+                        return a.password < b.password;
+                    }
+                } else if (field == "category") {
+                    if (a.category != b.category) {
+                        return a.category < b.category;
+                    }
+                } else if (field == "website") {
+                    if (a.website != b.website) {
+                        return a.website < b.website;
+                    }
+                } else if (field == "login") {
+                    if (a.login != b.login) {
+                        return a.login < b.login;
+                    }
+                }
+            }
+            return false;
+        });
 
+        cout << "Posortowane hasła:" << endl;
 
+        for (const auto& password : sortedPasswords) {
+            cout << "Nazwa: " << password.name << endl;
+            cout << "Hasło: " << password.password << endl;
+            cout << "Kategoria: " << password.category << endl;
+            cout << "Strona WWW: " << password.website << endl;
+            cout << "Login: " << password.login << endl;
+            cout << "Timestamp: " << asctime(localtime(&password.timestamp)) << endl;
+            cout << endl;
+        }
+    }
+
+    void addPassword() {
+        Password password;
+        cout << "Dodawanie nowego hasła:" << endl;
+
+        cout << "Nazwa: ";
+        getline(cin, password.name);
+
+        cout << "Hasło: ";
+        getline(cin, password.password);
+
+        while (isPasswordUsed(password.password)) {
+            cout << "To hasło zostało już użyte. Podaj inne hasło: ";
+            getline(cin, password.password);
+        }
+
+        cout << "Kategoria: ";
+        getline(cin, password.category);
+
+        cout << "Strona WWW (opcjonalnie): ";
+        getline(cin, password.website);
+
+        cout << "Login (opcjonalnie): ";
+        getline(cin, password.login);
+
+        time(&password.timestamp);
+
+        passwords.push_back(password);
+        encryptFile();
+    }
+
+    void editPassword() {
+        string name;
+        cout << "Podaj nazwę hasła do edycji: ";
+        getline(cin, name);
+
+        bool found = false;
+
+        for (auto& password : passwords) {
+            if (password.name == name) {
+                cout << "Edytujesz hasło:" << endl;
+                cout << "Nazwa: " << password.name << endl;
+                cout << "Hasło: " << password.password << endl;
+                cout << "Kategoria: " << password.category << endl;
+                cout << "Strona WWW: " << password.website << endl;
+                cout << "Login: " << password.login << endl;
+
+                cout << "Nowa nazwa (enter, jeśli bez zmian): ";
+                getline(cin, name);
+                if (!name.empty()) {
+                    password.name = name;
+                }
+
+                cout << "Nowe hasło (enter, jeśli bez zmian): ";
+                getline(cin, password.password);
+                while (isPasswordUsed(password.password)) {
+                    cout << "To hasło zostało już użyte. Podaj inne hasło: ";
+                    getline(cin, password.password);
+                }
+
+                cout << "Nowa kategoria (enter, jeśli bez zmian): ";
+                getline(cin, password.category);
+
+                cout << "Nowa strona WWW (enter, jeśli bez zmian): ";
+                getline(cin, password.website);
+
+                cout << "Nowy login (enter, jeśli bez zmian): ";
+                getline(cin, password.login);
+
+                encryptFile();
+                cout << "Hasło zostało zaktualizowane." << endl;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            cout << "Nie znaleziono hasła o podanej nazwie." << endl;
+        }
+    }
+
+    void removePassword() {
+        string name;
+        cout << "Podaj nazwę hasła do usunięcia: ";
+        getline(cin, name);
+
+        auto it = remove_if(passwords.begin(), passwords.end(), [&name](const Password& password) {
+            return password.name == name;
+        });
+
+        if (it != passwords.end()) {
+            passwords.erase(it, passwords.end());
+            encryptFile();
+            cout << "Hasło zostało usunięte." << endl;
+        } else {
+            cout << "Nie znaleziono hasła o podanej nazwie." << endl;
+        }
+    }
+
+    void addCategory() {
+        string category;
+        cout << "Podaj nazwę nowej kategorii: ";
+        getline(cin, category);
+
+        // Dodaj nową kategorię
+
+        cout << "Kategoria została dodana." << endl;
+    }
+
+    void removeCategory() {
+        string category;
+        cout << "Podaj nazwę kategorii do usunięcia: ";
+        getline(cin, category);
+
+        // Usuń kategorię wraz ze wszystkimi hasłami przypisanymi do niej
+
+        cout << "Kategoria została usunięta." << endl;
+    }
+};
 
 int main() {
+    string filename;
+    cout << "Podaj nazwę pliku: ";
+    getline(cin, filename);
 
-
-    std::cout << "Choose an option:" << std::endl;
-    std::cout << "1. Select source file" << std::endl;
-    std::cout << "2. Enter absolute path to file" << std::endl;
+    PasswordManager manager(filename);
 
     int choice;
-    std::cin >> choice;
+    string query;
+    vector<string> sortFields;
 
-    std::string filePath;
-    switch (choice) {
-        case 1:
-            std::cout << "Select a file from the program folder:" << std::endl;
-            std::cin >> filePath;
-            break;
-        case 2:
-            std::cout << "Enter the absolute path to the file:" << std::endl;
-            std::cin >> filePath;
-            break;
-        default:
-            std::cerr << "Invalid choice" << std::endl;
-            return 1;
+    while (true) {
+        cout << "Menu:" << endl;
+        cout << "1. Wyszukaj hasła" << endl;
+        cout << "2. Posortuj hasła" << endl;
+        cout << "3. Dodaj hasło" << endl;
+        cout << "4. Edytuj hasło" << endl;
+        cout << "5. Usuń hasło" << endl;
+        cout << "6. Dodaj kategorię" << endl;
+        cout << "7. Usuń kategorię" << endl;
+        cout << "8. Zakończ program" << endl;
+
+        cout << "Wybierz opcję: ";
+        cin >> choice;
+        cin.ignore(); // Ignoruj znak nowej linii po wprowadzeniu wyboru
+
+        switch (choice) {
+            case 1:
+                cout << "Podaj zapytanie: ";
+                getline(cin, query);
+                manager.searchPasswords(query);
+                break;
+            case 2:
+                sortFields.clear();
+                while (true) {
+                    string field;
+                    cout << "Podaj pole do sortowania (lub wpisz 'q' aby zakończyć): ";
+                    getline(cin, field);
+                    if (field == "q") {
+                        break;
+                    }
+                    sortFields.push_back(field);
+                }
+                manager.sortPasswords(sortFields);
+                break;
+            case 3:
+                manager.addPassword();
+                break;
+            case 4:
+                manager.editPassword();
+                break;
+            case 5:
+                manager.removePassword();
+                break;
+            case 6:
+                manager.addCategory();
+                break;
+            case 7:
+                manager.removeCategory();
+                break;
+            case 8:
+                return 0;
+            default:
+                cout << "Nieprawidłowa opcja. Spróbuj ponownie." << endl;
+                break;
+        }
+
+        cout << endl;
     }
-
-    encryptFile(filePath);
-
-    std::cout << "Enter a name for the password entry:" << std::endl;
-    std::string name;
-    std::cin >> name;
-
-    std::cout << "Enter the password:" << std::endl;
-    std::string password;
-    std::cin >> password;
-
-    std::cout << "Enter the category:" << std::endl;
-    std::string category;
-    std::cin >> category;
-
-    std::cout << "Enter the website (optional):" << std::endl;
-    std::string website;
-    std::cin >> website;
-
-    std::cout << "Enter the login (optional):" << std::endl;
-    std::string login;
-    std::cin >> login;
-
-    Password newPassword = {name, password, category, website, login};
-    savePassword(newPassword);
-
-    std::cout << "Saved password entry:" << std::endl;
-    std::cout << "Name: " << newPassword.name << std::endl;
-    std::cout << "Category: " << newPassword.category << std::endl;
-    std::cout << "Password: " << newPassword.password << std::endl;
-    if (!newPassword.website.empty()) {
-        std::cout << "Website: " << newPassword.website << std::endl;
-    }
-    if (!newPassword.login.empty()) {
-        std::cout << "Login: " << newPassword.login << std::endl;
-    }
-
-    readPasswords();
-//    int option = 0;
-//    while (option != 10) {
-//        UI::showPanel();
-//        std::cin >> option;
-//        std::string dirPath = "/Users/michallendzion/Desktop/Workspace/cpp-password-manager";
-//        std::string input;
-//        auto dirIter = std::filesystem::recursive_directory_iterator(dirPath);
-//        switch (option) {
-//            case 1:
-//                std::cout << "Searching for passwords..." << std::endl;
-//                break;
-//            case 2:
-//                std::cout << "Sorting passwords..." << std::endl;
-//                break;
-//            case 3:
-//                std::cout << "Adding passwords..." << std::endl;
-//                break;
-//            case 4:
-//                std::cout << "Editing passwords..." << std::endl;
-//                break;
-//            case 5:
-//                std::cout << "Deleting passwords..." << std::endl;
-//                break;
-//            case 6:
-//                std::cout << "Adding categories..." << std::endl;
-//                break;
-//            case 7:
-//                std::cout << "Editing categories..." << std::endl;
-//                break;
-//            case 8:
-//                for (const auto &entry : dirIter) {
-//                    if (entry.is_regular_file()) {
-//                        std::cout << entry.path().filename() << std::endl;
-//                    }
-//                }
-//                break;
-//            case 9:
-//                std::cin >> dirPath;
-//                break;
-//        }
-//    }
-
-
-
-    return 0;
 }
