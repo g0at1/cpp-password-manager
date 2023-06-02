@@ -15,7 +15,6 @@ struct Password {
     std::string category;
     std::string website;
     std::string login;
-    time_t timestamp;
 };
 
 class PasswordManager {
@@ -25,26 +24,32 @@ private:
     std::vector<std::string> categories;
 
     void encryptFile();
+
     void decryptFile();
-    bool isPasswordUsed(const std::string& password) const;
-    bool isPasswordSecure(const std::string& password) const;
+
+    bool isPasswordUsed(const std::string &password) const;
+
     std::string randomPassword(int length, bool upperCase, bool lowerCase, bool specialChar) const;
 
 public:
-    PasswordManager(const std::string& file);
+    PasswordManager(const std::string &file);
 
-    void searchPasswords(const std::string& query) const;
-    void sortPasswords(const std::vector<std::string>& fields);
+    void searchPasswords(const std::string &query) const;
+
+    void sortPasswords(const std::vector<std::string> &firstPasswd);
+
     void addPassword();
+
     void editPassword();
+
     void removePassword();
+
     void addCategory();
+
     void removeCategory();
+
+    void printVector();
 };
-
-
-
-
 
 
 #endif //CPP_PASSWORD_MANAGER_UI_H

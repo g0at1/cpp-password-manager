@@ -1,55 +1,63 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <ctime>
 #include <algorithm>
 #include "main.h"
 
-using namespace std;
 
-//struct Password {
-//    string name;
-//    string password;
-//    string category;
-//    string website;
-//    string login;
-//    time_t timestamp;
-//};
-
-
+/**
+ * Funkcja, która zapisuje hasła do pliku w postaci zaszyfrowanej.
+ *
+ * Wykorzystuje do tego funkcję write, która przekazuje binarne dane.
+ *
+ */
 void PasswordManager::encryptFile() {
-    ofstream file(filename, ios::binary);
+    std::ofstream file(filename, std::ios::binary);
     if (file.is_open()) {
-        for (const auto& password : passwords) {
-            file.write(reinterpret_cast<const char*>(&password), sizeof(password));
+        for (const auto &password: passwords) {
+            file.write(reinterpret_cast<const char *>(&password), sizeof(password));
         }
         file.close();
     } else {
-        cout << "Błąd podczas zapisu pliku." << endl;
+        std::cout << "Error saving file.\n";
     }
 }
 
+
+/**
+ * Funkcja odczytuje hasła z pliku dzięki metodzie read, która odczytuje binarne dane
+ *
+ *
+ */
 void PasswordManager::decryptFile() {
     passwords.clear();
 
-    ifstream file(filename, ios::binary);
+    std::ifstream file(filename, std::ios::binary);
     if (file.is_open()) {
         while (!file.eof()) {
             Password password;
-            file.read(reinterpret_cast<char*>(&password), sizeof(password));
+            file.read(reinterpret_cast<char *>(&password), sizeof(password));
             if (!file.eof()) {
                 passwords.push_back(password);
             }
         }
         file.close();
     } else {
-        cout << "Błąd podczas odczytu pliku." << endl;
+        std::cout << "Error reading file.\n";
     }
 }
 
-bool PasswordManager::isPasswordUsed(const string& password) const {
-    for (const auto& entry : passwords) {
+
+/**
+ * Sprawdzenie czy hasło zostało już użyte.
+ *
+ * @param password Parametr, w którym sprawdzamy czy był już użyty
+ * @return true jeśli parametr został użyty
+ * @return false jeśli parametr nie został użyty
+ */
+bool PasswordManager::isPasswordUsed(const std::string &password) const {
+    for (const auto &entry: passwords) {
         if (entry.password == password) {
             return true;
         }
@@ -57,89 +65,118 @@ bool PasswordManager::isPasswordUsed(const string& password) const {
     return false;
 }
 
-bool PasswordManager::isPasswordSecure(const string& password) const {
-    // Sprawdź tutaj złożoność hasła, np. długość, obecność wielkich liter, małych liter, znaków specjalnych itp.
-    // Zwróć true, jeśli hasło jest wystarczająco bezpieczne, w przeciwnym razie false.
 
-
-    return true;
-}
-
-
-PasswordManager::PasswordManager(const string& file) : filename(file) {
+/**
+ * Konstruktor klasy PasswordManager
+ *
+ * @param file przekazujemy plik do konstruktora, który zostanie odszyfrowany
+ */
+PasswordManager::PasswordManager(const std::string &file) : filename(file) {
     decryptFile();
 }
 
-void PasswordManager::searchPasswords(const string& query) const {
-    cout << "Wyszukane hasła:" << endl;
 
-    for (const auto& password : passwords) {
-        if (password.name.find(query) != string::npos ||
-            password.password.find(query) != string::npos ||
-            password.category.find(query) != string::npos ||
-            password.website.find(query) != string::npos ||
-            password.login.find(query) != string::npos) {
-            cout << "Nazwa: " << password.name << endl;
-            cout << "Hasło: " << password.password << endl;
-            cout << "Kategoria: " << password.category << endl;
-            cout << "Strona WWW: " << password.website << endl;
-            cout << "Login: " << password.login << endl;
-            cout << "Timestamp: " << asctime(localtime(&password.timestamp)) << endl;
-            cout << endl;
+/**
+ * Metoda, która wyszukuje hasło po odpowiednim zapytaniu przekazanym jako argument
+ *
+ * Używamy do tego funkcji find() dla typu std::string z przekazanym argumentem query
+ *
+ * Następnie zostają wyświetlone znalezione stringi z danych kategorii
+ *
+ * @param query podajemy zapytanie, pod którym chcemy żeby nasze hasło zostało znalezione
+ */
+void PasswordManager::searchPasswords(const std::string &query) const {
+    std::cout << "Searched passwords:\n";
+
+    for (const auto &password: passwords) {
+        if (password.name.find(query) != std::string::npos ||
+            password.password.find(query) != std::string::npos ||
+            password.category.find(query) != std::string::npos ||
+            password.website.find(query) != std::string::npos ||
+            password.login.find(query) != std::string::npos) {
+
+            std::cout << "Name: " << password.name << std::endl;
+            std::cout << "Password: " << password.password << std::endl;
+            std::cout << "Category: " << password.category << std::endl;
+            std::cout << "Website: " << password.website << std::endl;
+            std::cout << "Login: " << password.login << std::endl;
+            std::cout << std::endl;
         }
     }
 }
 
-void PasswordManager::sortPasswords(const vector<string>& fields) {
-    vector<Password> sortedPasswords = passwords;
+/**
+ * Sortujemy hasła po różnych parametrach.
+ *
+ * Wykorzystujemy do tego bibliotekę <algorithm> i funkcje sort().
+ *
+ *
+ *
+ * @param fields wybieramy po jakich parametrach chcemy sortowac
+ * @param result tworzymy wektor z posortowanymi hasłami
+ * @return false jeśli nie znajdziemy nic
+ */
+void PasswordManager::sortPasswords(const std::vector<std::string> &fields) {
+    std::vector<Password> result = passwords;
 
-    sort(sortedPasswords.begin(), sortedPasswords.end(), [&fields](const Password& a, const Password& b) {
-        for (const auto& field : fields) {
+    sort(result.begin(), result.end(), [&fields](const Password &firstPasswd, const Password &secondPasswd) -> bool {
+        for (const auto &field: fields) {
             if (field == "name") {
-                if (a.name != b.name) {
-                    return a.name < b.name;
+                if (firstPasswd.name != secondPasswd.name) {
+                    return firstPasswd.name < secondPasswd.name;
                 }
             } else if (field == "password") {
-                if (a.password != b.password) {
-                    return a.password < b.password;
+                if (firstPasswd.password != secondPasswd.password) {
+                    return firstPasswd.password < secondPasswd.password;
                 }
             } else if (field == "category") {
-                if (a.category != b.category) {
-                    return a.category < b.category;
+                if (firstPasswd.category != secondPasswd.category) {
+                    return firstPasswd.category < secondPasswd.category;
                 }
             } else if (field == "website") {
-                if (a.website != b.website) {
-                    return a.website < b.website;
+                if (firstPasswd.website != secondPasswd.website) {
+                    return firstPasswd.website < secondPasswd.website;
                 }
             } else if (field == "login") {
-                if (a.login != b.login) {
-                    return a.login < b.login;
+                if (firstPasswd.login != secondPasswd.login) {
+                    return firstPasswd.login < secondPasswd.login;
                 }
             }
         }
         return false;
     });
 
-    cout << "Posortowane hasła:" << endl;
+    std::cout << "Sorted passwords:\n";
 
-    for (const auto& password : sortedPasswords) {
-        cout << "Nazwa: " << password.name << endl;
-        cout << "Hasło: " << password.password << endl;
-        cout << "Kategoria: " << password.category << endl;
-        cout << "Strona WWW: " << password.website << endl;
-        cout << "Login: " << password.login << endl;
-        cout << "Timestamp: " << asctime(localtime(&password.timestamp)) << endl;
-        cout << endl;
+    for (const auto &password: result) {
+        std::cout << "Name: " << password.name << std::endl;
+        std::cout << "Password: " << password.password << std::endl;
+        std::cout << "Category: " << password.category << std::endl;
+        std::cout << "Website: " << password.website << std::endl;
+        std::cout << "Login: " << password.login << std::endl;
+        std::cout << std::endl;
     }
 }
 
-string PasswordManager::randomPassword(int length, bool upperCase, bool lowerCase, bool specialChar) const {
-    srand(time(NULL));
-    const string lowerChars = "abcdefghijklmnopqrstuvwxyz";
-    const string upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const string specialChars = "!@#$%^&*()";
 
-    string combinedChars;
+/**
+ * Funkcja sprawdza, które opcje mają zostać rozpatrzone w tworzeniu losowego hasła.
+ *
+ * Następnie tworzy i zwraca losowe hasło.
+ *
+ * @param length dlugosc hasla
+ * @param upperCase czy w hasle maja zostac uzyte wielkie litery
+ * @param lowerCase czy w hasle maja zostac uzyte male litery
+ * @param specialChar czy w hasle maja zostac uzyte znaki specjalne
+ * @return zwraca losowe hasło
+ */
+std::string PasswordManager::randomPassword(int length, bool upperCase, bool lowerCase, bool specialChar) const {
+    srand(time(NULL));
+    const std::string lowerChars = "abcdefghijklmnopqrstuvwxyz";
+    const std::string upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const std::string specialChars = "!@#$%^&*()-+=~`;:'?/";
+
+    std::string combinedChars;
 
     if (upperCase) {
         combinedChars += upperChars;
@@ -151,7 +188,7 @@ string PasswordManager::randomPassword(int length, bool upperCase, bool lowerCas
         combinedChars += specialChars;
     }
 
-    string result;
+    std::string result;
 
     int combinedCharsLength = combinedChars.length();
 
@@ -164,242 +201,300 @@ string PasswordManager::randomPassword(int length, bool upperCase, bool lowerCas
 
 }
 
+
+void PasswordManager::printVector() {
+    std::cout << "Available categories: " << std::endl;
+    for (const auto &category: categories) {
+        std::cout << "- " << category << std::endl;
+    }
+}
+
+/**
+ * Funkcja dodająca hasło z wybranymi przez nas parametrami.
+ *
+ * Funkcja pozwala na wygenerowanie losowego hasła z wybranymi przez nas parametrami takimi jak:
+ * długość hasła, wielkie litery, małe litery oraz znaki specjalne.
+ *
+ *
+ * Po wybraniu wszystkich parametrów tworzy hasło z odpowiednimi polami i dodaje do wektora.
+ *
+ */
 void PasswordManager::addPassword() {
     Password password;
-    cout << "Dodawanie nowego hasła:" << endl;
+    std::cout << "Adding new password:" << std::endl;
 
     do {
-        cout << "Nazwa: ";
-        getline(cin, password.name);
+        std::cout << "Name: ";
+        getline(std::cin, password.name);
     } while (password.name.empty());
 
-//        cout << "Hasło: ";
-//        getline(cin, password.password);
-
-    cout << "Automatycznie generować hasło? (T/N): ";
+    std::cout << "Do you want to generate random password? (Y/N): ";
     char generateChoice;
-    cin >> generateChoice;
+    std::cin >> generateChoice;
+    tolower(generateChoice);
+    std::cin.ignore();
 
-    if (generateChoice == 'T' || generateChoice == 't') {
+    if (generateChoice == 'y') {
         int length;
         bool includeUppercase, includeLowercase, includeSpecialChars;
 
-        cout << "Ilość znaków: ";
-        cin >> length;
+        std::cout << "Password length: ";
+        std::cin >> length;
+        std::cin.ignore();
 
-        cout << "Czy hasło ma zawierać wielkie litery? (T/N): ";
-        char uppercaseChoice;
-        cin >> uppercaseChoice;
-        includeUppercase = (uppercaseChoice == 'T' || uppercaseChoice == 't');
+        std::cout << "Include uppercase letters? (Y/N): ";
+        char upperChoice;
+        std::cin >> upperChoice;
+        std::cin.ignore();
+        tolower(upperChoice);
+        includeUppercase = (upperChoice == 'y');
 
-        cout << "Czy hasło ma zawierać małe litery? (T/N): ";
-        char lowercaseChoice;
-        cin >> lowercaseChoice;
-        includeLowercase = (lowercaseChoice == 'T' || lowercaseChoice == 't');
+        std::cout << "Include lowercase letters? (Y/N): ";
+        char lowerChoice;
+        std::cin >> lowerChoice;
+        std::cin.ignore();
+        tolower(lowerChoice);
+        includeLowercase = (lowerChoice == 'y');
 
-        cout << "Czy hasło ma zawierać znaki specjalne? (T/N): ";
-        char specialCharsChoice;
-        cin >> specialCharsChoice;
-        includeSpecialChars = (specialCharsChoice == 'T' || specialCharsChoice == 't');
-
-        cin.ignore();  // Clear input buffer
+        std::cout << "Include special characters? (Y/N): ";
+        char specialChoice;
+        std::cin >> specialChoice;
+        std::cin.ignore();
+        tolower(specialChoice);
+        includeSpecialChars = (specialChoice == 'y');
 
         password.password = randomPassword(length, includeUppercase, includeLowercase, includeSpecialChars);
-    } else if (generateChoice == 'N' || generateChoice == 'n') {
+    } else if (generateChoice == 'n') {
         do {
-            cout << "Hasło: ";
-//            cin.ignore();  // Clear input buffer
-            getline(cin, password.password);
+            std::cout << "Password: ";
+            getline(std::cin, password.password);
             if (isPasswordUsed(password.password)) {
-                cout << "Haslo jest juz uzyte i moze nie byc bezpieczne.\n";
-            };
+                std::cout << "Password is already used and can be unsafe.\n";
+            }
         } while (password.password.empty());
     } else {
-        cout << "Blad\n";
+        std::cout << "Error. \n";
     }
 
-//    while (isPasswordUsed(password.password)) {
-//        cout << "To hasło zostało już użyte. Podaj inne hasło: ";
-//        getline(cin, password.password);
-//    }
+    std::cout << "Do you want to add category that has been already created? (Y/n): ";
+    char categoryChoice;
+    std::cin >> categoryChoice;
+    tolower(categoryChoice);
+    std::cin.ignore();
+    if (categoryChoice == 'y') {
+        printVector();
+        std::cout << "Category: ";
+        getline(std::cin, password.category);
+    } else {
+        do {
+            std::cout << "Category: ";
+            getline(std::cin, password.category);
+        } while (password.category.empty());
+    }
 
-    do {
-        cout << "Kategoria: ";
-        getline(cin, password.category);
-    } while (password.category.empty());
+    std::cout << "Website (optional): ";
+    getline(std::cin, password.website);
 
-    cout << "Strona WWW (opcjonalnie): ";
-    getline(cin, password.website);
-
-    cout << "Login (opcjonalnie): ";
-    getline(cin, password.login);
-
-    time(&password.timestamp);
+    std::cout << "Login (optional): ";
+    getline(std::cin, password.login);
 
     passwords.push_back(password);
     encryptFile();
 }
 
+/**
+ * Funkcja, która pozwala użytkownikowi na zmiane wartości w haśle
+ *
+ * Pobiera od użytkownika nazwę hasła, a następnie użytkownik wybiera co chce zmienić
+ *
+ *
+ * @param name nazwa hasła do edytowania
+ */
 void PasswordManager::editPassword() {
-    string name;
-    cout << "Podaj nazwę hasła do edycji: ";
-    getline(cin, name);
+    std::string name;
+    std::cout << "Enter name of the password to edit: ";
+    getline(std::cin, name);
 
     bool found = false;
 
-    for (auto& password : passwords) {
+    for (auto &password: passwords) {
         if (password.name == name) {
-            cout << "Edytujesz hasło:" << endl;
-            cout << "Nazwa: " << password.name << endl;
-            cout << "Hasło: " << password.password << endl;
-            cout << "Kategoria: " << password.category << endl;
-            cout << "Strona WWW: " << password.website << endl;
-            cout << "Login: " << password.login << endl;
+            std::cout << "Editing password:" << std::endl;
+            std::cout << "Name: " << password.name << std::endl;
 
-            cout << "Nowa nazwa (enter, jeśli bez zmian): ";
-            getline(cin, name);
+            std::cout << "New name (click enter if stays the same): ";
+            getline(std::cin, name);
             if (!name.empty()) {
                 password.name = name;
             }
 
-            cout << "Nowe hasło (enter, jeśli bez zmian): ";
-            getline(cin, password.password);
+            std::cout << "New password (click enter if stays the same): ";
+            getline(std::cin, password.password);
 
-            cout << "Nowa kategoria (enter, jeśli bez zmian): ";
-            getline(cin, password.category);
+            std::cout << "New category (click enter if stays the same): ";
+            getline(std::cin, password.category);
 
-            cout << "Nowa strona WWW (enter, jeśli bez zmian): ";
-            getline(cin, password.website);
+            std::cout << "New website (click enter if stays the same): ";
+            getline(std::cin, password.website);
 
-            cout << "Nowy login (enter, jeśli bez zmian): ";
-            getline(cin, password.login);
+            std::cout << "New login (click enter if stays the same): ";
+            getline(std::cin, password.login);
 
             encryptFile();
-            cout << "Hasło zostało zaktualizowane." << endl;
+
+            std::cout << "Password edited." << std::endl;
             found = true;
             break;
         }
     }
 
     if (!found) {
-        cout << "Nie znaleziono hasła o podanej nazwie." << endl;
+        std::cout << "Password not found." << std::endl;
     }
 }
 
+/**
+ * Funkcja, która pobiera od użytkownika nazwe hasła, a później je usuwa.
+ *
+ * @param name nazwa hasła do usunięcia
+ *
+ */
 void PasswordManager::removePassword() {
-    string name;
-    cout << "Podaj nazwę hasła do usunięcia: ";
-    getline(cin, name);
+    std::string name;
+    std::cout << "Enter the name of the password to delete: ";
+    getline(std::cin, name);
 
-    auto it = remove_if(passwords.begin(), passwords.end(), [&name](const Password& password) {
-        return password.name == name;
-    });
+    std::cout << "You are about to delete a password. Are you sure? (Y/N): " << std::endl;
+    char confirmation;
+    std::cin >> confirmation;
+    tolower(confirmation);
+    std::cin.ignore();
 
-    if (it != passwords.end()) {
-        passwords.erase(it, passwords.end());
-        encryptFile();
-        cout << "Hasło zostało usunięte." << endl;
+    if (confirmation == 'y') {
+        auto it = remove_if(passwords.begin(), passwords.end(), [&name](const Password &password) {
+            return password.name == name;
+        });
+
+        if (it != passwords.end()) {
+            passwords.erase(it, passwords.end());
+            encryptFile();
+            std::cout << "Password deleted." << std::endl;
+        } else {
+            std::cout << "Password not found." << std::endl;
+        }
     } else {
-        cout << "Nie znaleziono hasła o podanej nazwie." << endl;
+        std::cout << "Operation canceled." << std::endl;
     }
 }
 
+
+/**
+ * Funkcja, która dodaje nową kategorię do wektora kategorii.
+ *
+ * Pobiera od użytkownika nazwę kategorii
+ *
+ * @param category nazwa kategorii do dodania
+ */
 void PasswordManager::addCategory() {
-    string category;
-    cout << "Podaj nazwę nowej kategorii: ";
-    getline(cin, category);
+    std::string category;
+    std::cout << "Enter name of the category: ";
+    getline(std::cin, category);
     categories.push_back(category);
 
-    // Dodaj nową kategorię
-
-    cout << "Kategoria została dodana." << endl;
+    std::cout << "Category added." << std::endl;
 }
 
-void PasswordManager::removeCategory() {
-//    string category;
-//    cout << "Podaj nazwę kategorii do usunięcia: ";
-//    getline(cin, category);
-//
-//    // Usuń kategorię wraz ze wszystkimi hasłami przypisanymi do niej
-//    for (auto it = passwords.begin(); it != passwords.end(); ) {
-//        if (it->category == category) {
-//            it = passwords.erase(it);
-//        } else {
-//            ++it;
-//        }
-//    }
-    string category;
-    cout << "Podaj nazwę kategorii do usunięcia: ";
-    getline(cin, category);
 
-    // Usuń hasła przypisane do kategorii
-    auto it = remove_if(passwords.begin(), passwords.end(), [&category](const Password& password) {
+/**
+ * Funkcja, która pozwala na usunięcie kategorii wraz ze wszystkimi hasłami przypisanymi do tej kategorii
+ *
+ * Pobiera od użytkownika nazwę kategorii.
+ *
+ * @param category nazwa kategorii do usunięcia
+ */
+void PasswordManager::removeCategory() {
+    std::string category;
+    std::cout << "Enter name of the category to delete: ";
+    getline(std::cin, category);
+
+    auto it = remove_if(passwords.begin(), passwords.end(), [&category](const Password &password) {
         return password.category == category;
     });
     passwords.erase(it, passwords.end());
     encryptFile();
 
-    cout << "Kategoria została usunięta." << endl;
+    std::cout << "Category deleted." << std::endl;
+
+
 }
 
-bool fileExists(const std::string& filename) {
+/**
+ * Funkcja sprawdzająca czy podany plik z parametru istnieje
+ *
+ *
+ * @param filename wczytujemy nazwę pliku
+ * @return true jeśli plik istnieje
+ */
+bool fileExists(const std::string &filename) {
     std::ifstream file(filename);
-    return file.good(); // Returns true if the file exists
+    return file.good();
 }
-
 
 int main() {
-    string filename;
+    std::string filename;
     int choice;
-    string query;
-    vector<string> sortFields;
+    std::string query;
+    std::vector<std::string> sortFields;
     char input;
-    cout << "Podaj nazwę pliku: ";
-    getline(cin, filename);
+    std::cout << "Enter name of the file: ";
+    getline(std::cin, filename);
+    std::cout << std::endl;
 
     PasswordManager manager(filename);
 
     if (!fileExists(filename)) {
-        cout << "File not exist";
+        std::cout << "File not exist.\n";
     } else {
         while (true) {
-            cout << "Menu:" << endl;
-            cout << "1. Wyszukaj hasła" << endl;
-            cout << "2. Posortuj hasła" << endl;
-            cout << "3. Dodaj hasło" << endl;
-            cout << "4. Edytuj hasło" << endl;
-            cout << "5. Usuń hasło" << endl;
-            cout << "6. Dodaj kategorię" << endl;
-            cout << "7. Usuń kategorię" << endl;
-            cout << "8. Zakończ program" << endl;
+            std::cout << "1. Search password" << std::endl;
+            std::cout << "2. Sort password" << std::endl;
+            std::cout << "3. Add password" << std::endl;
+            std::cout << "4. Edit password" << std::endl;
+            std::cout << "5. Delete password" << std::endl;
+            std::cout << "6. Add category" << std::endl;
+            std::cout << "7. Delete category" << std::endl;
+            std::cout << "8. Close program" << std::endl;
 
-            cout << "Wybierz opcję: ";
-            cin >> choice;
-            cin.ignore(); // Ignoruj znak nowej linii po wprowadzeniu wyboru
+            std::cout << "Choose an option: ";
+            std::cin >> choice;
+            std::cin.ignore();
 
             switch (choice) {
                 case 1:
-                    cout << "Podaj zapytanie: ";
-                    getline(cin, query);
+                    std::cout << "Enter query: ";
+                    getline(std::cin, query);
                     manager.searchPasswords(query);
-                    cin >> input;
-                    if (input == 'q' || input == 'Q')
+                    std::cout << "Type q to continue: ";
+                    std::cin >> input;
+                    tolower(input);
+                    if (input == 'q')
                         break;
                 case 2:
                     sortFields.clear();
                     while (true) {
-                        string field;
-                        cout << "Podaj pole do sortowania (lub wpisz 'q' aby zakończyć): ";
-                        getline(cin, field);
-                        if (field == "q") {
+                        std::string field;
+                        std::cout << "Enter field/fields to sort (type q to close): ";
+                        getline(std::cin, field);
+                        if (field == "q" || field == "Q") {
                             break;
                         }
                         sortFields.push_back(field);
                     }
-
                     manager.sortPasswords(sortFields);
-                    cin >> input;
-                    if (input == 'q' || input == 'Q')
+                    std::cout << "Type q to continue: ";
+                    std::cin >> input;
+                    tolower(input);
+                    if (input == 'q')
                         break;
                 case 3:
                     manager.addPassword();
@@ -419,77 +514,10 @@ int main() {
                 case 8:
                     return 0;
                 default:
-                    cout << "Nieprawidłowa opcja. Spróbuj ponownie." << endl;
+                    std::cout << "Invalid option." << std::endl;
                     break;
             }
-
-            cout << endl;
+            std::cout << std::endl;
         }
     }
-
-
-
-//    while (true) {
-//        cout << "Menu:" << endl;
-//        cout << "1. Wyszukaj hasła" << endl;
-//        cout << "2. Posortuj hasła" << endl;
-//        cout << "3. Dodaj hasło" << endl;
-//        cout << "4. Edytuj hasło" << endl;
-//        cout << "5. Usuń hasło" << endl;
-//        cout << "6. Dodaj kategorię" << endl;
-//        cout << "7. Usuń kategorię" << endl;
-//        cout << "8. Zakończ program" << endl;
-//
-//        cout << "Wybierz opcję: ";
-//        cin >> choice;
-//        cin.ignore(); // Ignoruj znak nowej linii po wprowadzeniu wyboru
-//
-//        switch (choice) {
-//            case 1:
-//                cout << "Podaj zapytanie: ";
-//                getline(cin, query);
-//                manager.searchPasswords(query);
-//                cin >> input;
-//                if (input == 'q' || input == 'Q')
-//                    break;
-//            case 2:
-//                sortFields.clear();
-//                while (true) {
-//                    string field;
-//                    cout << "Podaj pole do sortowania (lub wpisz 'q' aby zakończyć): ";
-//                    getline(cin, field);
-//                    if (field == "q") {
-//                        break;
-//                    }
-//                    sortFields.push_back(field);
-//                }
-//
-//                manager.sortPasswords(sortFields);
-//                cin >> input;
-//                if (input == 'q' || input == 'Q')
-//                    break;
-//            case 3:
-//                manager.addPassword();
-//                break;
-//            case 4:
-//                manager.editPassword();
-//                break;
-//            case 5:
-//                manager.removePassword();
-//                break;
-//            case 6:
-//                manager.addCategory();
-//                break;
-//            case 7:
-//                manager.removeCategory();
-//                break;
-//            case 8:
-//                return 0;
-//            default:
-//                cout << "Nieprawidłowa opcja. Spróbuj ponownie." << endl;
-//                break;
-//        }
-//
-//        cout << endl;
-//    }
 }
