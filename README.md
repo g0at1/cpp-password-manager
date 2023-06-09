@@ -1,2 +1,2 @@
-# cpp_password_manager
+# Password Manager
 
