@@ -30,6 +30,11 @@ The C++ Password Manager is a command-line application that generates and manage
 5. Use the provided menu options to manage your passwords, including generating, adding, searching, deleting, editing, sorting, and managing categories.
 6. The program will save the changes to the password text file.
 
+## TODO
+The project is still under development, and the following features are planned to be implemented:
+
+- Properly working encryption and decryption system for text files.
+
 ## Contributing
 Contributions to this project are welcome! If you have any ideas, suggestions, or bug reports, please submit an issue or a pull request on the GitHub repository.
 
